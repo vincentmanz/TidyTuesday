@@ -1,0 +1,98 @@
+---
+title: "Ask a Manager Survey"
+description: |
+  2021-05-18
+author:
+  - name: Vincent Manzanilla
+    url: https://github.com/vincentmanz
+    affiliation: BaseClear B.V / Datalabs
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    toc: true
+    toc_depth: 3
+editor_options: 
+  markdown: 
+    wrap: 200
+  chunk_output_type: console
+---
+
+
+
+The data this week comes from the Ask a Manager Survey. H/t to Kaija Gahm for sharing it as an issue!
+
+    The salary survey a few weeks ago got a huge response — 24,000+ people shared their salaries and other info, which is a lot of raw data to sift through. Reader Elisabeth Engl kindly took the raw data and analyzed some of the trends in it and here’s what she found. (She asked me to note that she did this as a fun project to share some insights from the survey, rather than as a paid engagement.)
+
+    This data does not reflect the general population; it reflects Ask a Manager readers who self-selected to respond, which is a very different group (as you can see just from the demographic breakdown below, which is very white and very female).
+
+Elisabeth Engl prepped some plots for the [Ask a Manager blog](https://www.askamanager.org/2021/05/some-findings-from-24000-peoples-salaries.html) using this data.
+
+# Get the data
+
+```{r get the data}
+# Get the Data
+
+# Read in with tidytuesdayR package 
+# Install from CRAN via: install.packages("tidytuesdayR")
+# This loads the readme and all the datasets for the week of interest
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2021-05-18')
+tuesdata <- tidytuesdayR::tt_load(2021, week = 21)
+
+survey <- tuesdata$survey
+
+# Or read in the data manually
+#survey <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-05-18/survey.csv')
+
+```
+
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(echarts4r)
+library(viridis)
+library(hrbrthemes)
+library(plotly)
+```
+
+
+```{r echart, eval=FALSE, include=FALSE}
+survey %>% select(race,annual_salary, years_of_experience_in_field) %>% 
+  arrange(years_of_experience_in_field) %>%
+  e_chart(years_of_experience_in_field) %>%
+  e_area(annual_salary) %>%
+  e_tooltip()
+  
+
+
+```
+
+```{r}
+library(ggridges)
+summary(survey)
+#survey %>% select(years_of_experience_in_field) %>% count(years_of_experience_in_field)
+survey %>% mutate(years_of_experience_in_field, Experience = case_when(
+    years_of_experience_in_field == "1 year or less" ~ "1<",
+    years_of_experience_in_field == "11 - 20 years" ~ "11-20",
+    years_of_experience_in_field == "2 - 4 years" ~ "2-4",
+    years_of_experience_in_field == "21 - 30 years" ~ "21-30",
+    years_of_experience_in_field == "31 - 40 years" ~ "31-40",
+    years_of_experience_in_field == "41 years or more" ~ ">41",
+    years_of_experience_in_field == "5-7 years" ~ "5-7",
+    years_of_experience_in_field == "8 - 10 years" ~ "8-10")) %>%
+  ggplot(aes(
+    x = Experience,
+    y = annual_salary,
+    fill = gender)) +
+  geom_boxplot() +
+  scale_fill_viridis(discrete = TRUE) +
+  theme_ipsum() +
+  ylim(0,500000) +
+  scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30", "31-40", ">41"))
+
+
+```
+
