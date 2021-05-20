@@ -49,8 +49,8 @@ survey <- tuesdata$survey
 ```
 
 
-```{r message=FALSE, warning=FALSE}
-library(dplyr)
+```{r libraries, message=FALSE, warning=FALSE}
+library(tidyverse)
 library(ggplot2)
 library(echarts4r)
 library(viridis)
@@ -61,25 +61,173 @@ library(stringr)
 
 ```{r}
 #from https://github.com/richardvogg/tidy-tuesdays/blob/master/2021/Week%2021%20-%20salary%20survey/salary_survey.R
-survey <- survey %>%
-  mutate(country_dedupes = str_remove_all(country, "[[:punct:]]")) %>%
+survey_filtered <- survey %>%
+  mutate(country_dedupes = str_remove_all(country, "[[:punct:]]") %>%
            tolower() %>%
-           str_replace("^us|^usa","united states") %>%
-           str_replace("^uk","united kingdom") %>%
-           str_remove(" of america")) %>%
-  mutate(country_dedupes = fuzzy_dedupes(country_dedupes) %>%
-           str_to_title())
+           str_replace("^australi.*","Oceania") %>%
+           str_replace("^argentina*","South America") %>%
+           str_replace("^austria.*","Europe") %>%
+           str_replace("^bangladesh","Asia") %>%
+           str_replace("^belgium","Europe") %>%
+           str_replace("^bermuda","North America") %>%
+           str_replace("^brasil|^brazil","South America") %>%
+           str_replace("^britain","Europe") %>%
+           str_replace("^bulgaria","Europe") %>%
+           str_replace("^california","North America") %>%
+           str_replace("^cambodia","Asia") %>%
+           str_replace("^canad.*|canda.*|csnada.*","North America") %>%
+           str_replace("^catalonia","Europe") %>%
+           str_replace("^cayman islands","North America") %>%
+           str_replace("^chile","South America") %>%
+           str_replace("^china","Asia") %>%
+           str_replace("^colombia","South America") %>%
+           str_replace("^afghanistan","Asia") %>%
+           str_replace("^africa","Africa") %>%
+           str_replace("^america","South America") %>%
+           str_replace("^congo","Africa") %>%
+           str_replace("^costa rica","South America") %>%
+           str_replace("^cote divoire","Africa") %>%
+           str_replace("^croatia","Europe") %>%
+           str_replace("^cuba","North America") %>%
+           str_replace("^czech.*","Europe") %>%
+           str_replace("^danmark|^denmark","Europe") %>%
+           str_replace("^ecuador","South America") %>%
+           str_replace("^england.*|^englang","Europe") %>%
+           str_replace("^eritrea","Africa") %>%
+           str_replace("^estonia","Europe") %>%
+           str_replace("^eu.*","Europe") %>%
+           str_replace("europe|EUraine","Europe") %>%
+           str_replace("^finland","Europe") %>%
+           str_replace("^france","Europe") %>%
+           str_replace("^germany","Europe") %>%
+           str_replace("^ghana","Africa") %>%
+           str_replace("^great britain","Europe") %>%
+           str_replace("^greece","Europe") %>%
+           str_replace("^hartford","Europe") %>%
+           str_replace("^hong kong","Asia") %>%
+           str_replace("^hungary","Europe") %>%
+           str_replace("^india","Asia") %>%
+           str_replace("^indonesia","Asia") %>%
+           str_replace("^ireland","Europe") %>%
+           str_replace("^bangladesh","Asia") %>%
+           str_replace("^bangladesh","Asia") %>%
+           str_replace("isle of man","Europe") %>%
+           str_replace("^israel","Asia") %>%
+           str_replace("^is.*","North America") %>%
+           str_replace("^isa.*","North America") %>%
+           str_replace("^italy.*","Europe") %>%
+           str_replace("^jamaica","North America") %>%
+           str_replace("^japan.*","Asia") %>%
+           str_replace("^jersey.*","Europe") %>%
+           str_replace("^jordan","Asia") %>%
+           str_replace("^kenya","Africa") %>%
+           str_replace("^kuwait","Asia") %>%
+           str_replace("^latvia","Europe") %>%
+           str_replace("^lithuania","Europe") %>%
+           str_replace("^luxemb.*","Europe") %>%
+           str_replace("^mainland china","Asia") %>%
+           str_replace("^malaysia","Asia") %>%
+           str_replace("^malta","Europe") %>%
+           str_replace("^mexico|^méxico","North America") %>%
+           str_replace("^morocco","Africa") %>%
+           str_replace("^nederland.*|^nl|^netherlands|^the netherlands","Europe") %>%
+           str_replace("^new zealand.*|^nz","Oceania") %>%
+           str_replace("^nigeria","Europe") %>%
+           str_replace("northern ireland.*","Europe") %>%
+           str_replace("norway","Europe") %>%
+           str_replace("^pakistan","Asia") %>%
+           str_replace("^panamá","North America") %>%
+           str_replace("^philippines|^remote philippines","Asia") %>%
+           str_replace("^poland","Europe") %>%
+           str_replace("^portugal","Europe") %>%
+           str_replace("^puerto rico","North America") %>%
+           str_replace("^qatar","Asia") %>%
+           str_replace("^romania","Europe") %>%
+           str_replace("^russia","Asia") %>%
+           str_replace("^rwanda","Africa") %>%
+           str_replace("^san francisco","North America") %>%
+           str_replace("^saudi arabia","Asia") %>%
+           str_replace("^scotland.*","Europe") %>%
+           str_replace("^serbia","Europe") %>%
+           str_replace("^sierra leone","Africa") %>%
+           str_replace("^singapore","Asia") %>%
+           str_replace("^slovakia","Europe") %>%
+           str_replace("^slovenia","Europe") %>%
+           str_replace("^somalia","Africa") %>%
+           str_replace("^south africa","Africa") %>%
+           str_replace("^south korea","Asia") %>%
+           str_replace("^spain","Europe") %>%
+           str_replace("^sri lanka","Asia") %>%
+           str_replace("^sweden","Europe") %>%
+           str_replace("^switzerland","Europe") %>%
+           str_replace("^taiwan","Asia") %>%
+           str_replace("^thailand","Asia") %>%
+           str_replace("^the bahamas","North America") %>%
+           str_replace("^the united states.*|^the us.*|^u s.*|^ua.*|^uniited states.*|^unite states.*|^united  states.*|^united sates.*|^united state.*|^united stares.*|^united stat.*|^united sttes.*|^unitedstates.*|^uniteed states.*|^unitef stated.*|^uniter statez.*|^unites states|^unitied states.*|^uniyed states.*|^uniyes states.*|^unted states.*|^untied states.*|^united statss.*|^united stattes.*|^united statues.*|^united status.*|^united statws.*|^unitied states.*","North America") %>%
+           str_replace("^turkey","Asia") %>%
+           str_replace("^uganda","Africa") %>%
+           str_replace("^united arab emirates","Asia") %>%
+           str_replace("^united kindom|united kingdom.*","Europe") %>%
+           str_replace("^uruguay","South America") %>%
+           str_replace("^vietnam","Asia") %>%
+           str_replace("^zimbabwe","Africa") %>%
+           str_replace("^uk.*|^unites kingdom|^wales|^wales Europe|^wales uk","Europe") %>%
+           str_replace("^us.*|^usa.*|^virginia","North America") %>% 
+           str_replace("^Europe uk*","Europe") %>%  
+           str_replace("^Europe Europe*","Europe") %>%  
+           str_replace("^South America but my org is in thailand*","Asia")) %>%
+  filter(str_detect(country_dedupes, "Africa|Asia|Europe|North America|Oceania|South America")) %>% 
+  mutate(years_of_experience_in_field, 
+         Experience = case_when(
+           years_of_experience_in_field == "1 year or less" ~ "1<",
+           years_of_experience_in_field == "11 - 20 years" ~ "11-20",
+           years_of_experience_in_field == "2 - 4 years" ~ "2-4",
+           years_of_experience_in_field == "21 - 30 years" ~ "21-30",
+           years_of_experience_in_field == "31 - 40 years" ~ "31-40",
+           years_of_experience_in_field == "41 years or more" ~ ">41",
+           years_of_experience_in_field == "5-7 years" ~ "5-7",
+           years_of_experience_in_field == "8 - 10 years" ~ "8-10"))
+
+
+a <- b %>% count(country_dedupes) 
+
+
+survey <- survey 
+
+
+
 ```
 
 
 ```{r echart, eval=FALSE, include=FALSE}
-survey %>% select(race,annual_salary, years_of_experience_in_field) %>% 
-  arrange(years_of_experience_in_field) %>%
-  e_chart(years_of_experience_in_field) %>%
-  e_area(annual_salary) %>%
-  e_tooltip()
-  
+man <-survey %>% select(gender,annual_salary, Experience) %>% 
+  filter(gender == "Man") %>% select(annual_salary, Experience)
+colnames(man) <- c("Man", "Experience")
+women <-survey %>% select(gender,annual_salary, Experience) %>% 
+  filter(gender == "Woman")
+colnames(women) <- c("Woman", "Woman salary", "Experience")
+nonbinary <-survey %>% select(gender,annual_salary, Experience) %>% 
+  filter(gender == "Non-binary")
+colnames(nonbinary) <- c("Non binary", "Non binary salary", "Experience")
+other<-survey %>% select(gender,annual_salary, Experience) %>% 
+  filter(gender == "Other or prefer not to answer")
+colnames(other) <- c("Other", "Other salary", "Experience")
+no_answer<-survey %>% select(gender,annual_salary, Experience) %>% 
+  filter(gender == "Prefer not to answer")
+colnames(no_answer) <- c("NA", "NA salary", "Experience")
 
+colnames(df.x) <- NULL
+new_df <- rbind(df1,df2,df3)
+
+houses_wide
+
+survey %>% select(gender,annual_salary, Experience) %>%
+  e_chart(Experience) %>%
+  e_area_(man) %>%
+  e_tooltip() 
+  e_band(l, u, areaStyle = list(list(color = "grey"), list(color = "grey")))
+ 
+  
 
 ```
 
@@ -87,15 +235,7 @@ survey %>% select(race,annual_salary, years_of_experience_in_field) %>%
 library(ggridges)
 summary(survey)
 #survey %>% select(years_of_experience_in_field) %>% count(years_of_experience_in_field)
-survey %>% mutate(years_of_experience_in_field, Experience = case_when(
-    years_of_experience_in_field == "1 year or less" ~ "1<",
-    years_of_experience_in_field == "11 - 20 years" ~ "11-20",
-    years_of_experience_in_field == "2 - 4 years" ~ "2-4",
-    years_of_experience_in_field == "21 - 30 years" ~ "21-30",
-    years_of_experience_in_field == "31 - 40 years" ~ "31-40",
-    years_of_experience_in_field == "41 years or more" ~ ">41",
-    years_of_experience_in_field == "5-7 years" ~ "5-7",
-    years_of_experience_in_field == "8 - 10 years" ~ "8-10")) %>%
+ %>%
   ggplot(aes(
     x = Experience,
     y = annual_salary,
@@ -105,6 +245,13 @@ survey %>% mutate(years_of_experience_in_field, Experience = case_when(
   theme_ipsum() +
   ylim(0,500000) +
   scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30", "31-40", ">41"))
+
+
+```
+
+```{r}
+a <- survey %>% count(country) 
+
 
 
 ```
