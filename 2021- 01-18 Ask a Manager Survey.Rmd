@@ -227,7 +227,14 @@ tab  %>% ggplot(aes(x = Experience, y = Man_Europe, group = 1)) +
   theme_ipsum() +
   scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30",  ">31")) +
   geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe, fill = "green"), alpha = 0.75) +
-  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "blue"), alpha = 0.75) 
+  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "blue"), alpha = 0.75) +
+  theme(panel.background = element_rect(fill = "#2E2E2E",colour = "#2E2E2E", size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.1, linetype = 'dashed', colour = "white"), 
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "#2E2E2E"),
+        legend.text	= element_text(colour = "white"),
+        legend.title = element_text(colour = "white"),
+        axis.text = element_text(colour = "white"))
 
 
 ```
