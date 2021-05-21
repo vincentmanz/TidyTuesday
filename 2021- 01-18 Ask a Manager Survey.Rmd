@@ -57,12 +57,13 @@ library(viridis)
 library(hrbrthemes)
 library(fuzzymatch)
 library(stringr)
+library(kableExtra)
 ```
 
 ```{r}
 #from https://github.com/richardvogg/tidy-tuesdays/blob/master/2021/Week%2021%20-%20salary%20survey/salary_survey.R
 survey_filtered <- survey %>%
-  mutate(country_dedupes = str_remove_all(country, "[[:punct:]]") %>%
+  mutate(Continent = str_remove_all(country, "[[:punct:]]") %>%
            tolower() %>%
            str_replace("^australi.*","Oceania") %>%
            str_replace("^argentina*","South America") %>%
@@ -176,82 +177,62 @@ survey_filtered <- survey %>%
            str_replace("^Europe uk*","Europe") %>%  
            str_replace("^Europe Europe*","Europe") %>%  
            str_replace("^South America but my org is in thailand*","Asia")) %>%
-  filter(str_detect(country_dedupes, "Africa|Asia|Europe|North America|Oceania|South America")) %>% 
+  filter(str_detect(Continent, "Europe|North America")) %>% 
   mutate(years_of_experience_in_field, 
          Experience = case_when(
            years_of_experience_in_field == "1 year or less" ~ "1<",
            years_of_experience_in_field == "11 - 20 years" ~ "11-20",
            years_of_experience_in_field == "2 - 4 years" ~ "2-4",
            years_of_experience_in_field == "21 - 30 years" ~ "21-30",
-           years_of_experience_in_field == "31 - 40 years" ~ "31-40",
-           years_of_experience_in_field == "41 years or more" ~ ">41",
+           years_of_experience_in_field == "31 - 40 years" ~ ">31",
+           years_of_experience_in_field == "41 years or more" ~ ">31",
            years_of_experience_in_field == "5-7 years" ~ "5-7",
-           years_of_experience_in_field == "8 - 10 years" ~ "8-10"))
+           years_of_experience_in_field == "8 - 10 years" ~ "8-10")) %>%
+  mutate(Salary = case_when(
+    Continent == "North America" & currency == "USD" ~ annual_salary/1,
+    Continent == "North America" & currency == "CAD" ~ annual_salary/1.2,
+    Continent == "Europe" & currency == "CHF" ~ annual_salary/0.89,
+    Continent == "Europe" & currency == "GBP" ~ annual_salary/0.7,
+    Continent == "Europe" & currency == "SEK" ~ annual_salary/8.29,
+    Continent == "Europe" & currency == "EUR" ~ annual_salary/0.81)) %>%
+  filter(Salary > 15000)
 
+x <- survey_filtered %>% filter(str_detect(Experience, "31-40")) %>% filter(str_detect(Continent, "Europe"))
 
-a <- b %>% count(country_dedupes) 
+tab <- survey_filtered %>% 
+  select(Experience , gender, Continent, Salary) %>% 
+  group_by(Experience,gender,Continent) %>% 
+  filter(str_detect(gender, "Woman|Man")) %>%
+  summarize(Median = median(Salary, na.rm=TRUE)) %>% 
+  pivot_wider(names_from = c(gender,Continent),values_from = Median) 
 
-
-survey <- survey 
-
-
-
-```
-
-
-```{r echart, eval=FALSE, include=FALSE}
-man <-survey %>% select(gender,annual_salary, Experience) %>% 
-  filter(gender == "Man") %>% select(annual_salary, Experience)
-colnames(man) <- c("Man", "Experience")
-women <-survey %>% select(gender,annual_salary, Experience) %>% 
-  filter(gender == "Woman")
-colnames(women) <- c("Woman", "Woman salary", "Experience")
-nonbinary <-survey %>% select(gender,annual_salary, Experience) %>% 
-  filter(gender == "Non-binary")
-colnames(nonbinary) <- c("Non binary", "Non binary salary", "Experience")
-other<-survey %>% select(gender,annual_salary, Experience) %>% 
-  filter(gender == "Other or prefer not to answer")
-colnames(other) <- c("Other", "Other salary", "Experience")
-no_answer<-survey %>% select(gender,annual_salary, Experience) %>% 
-  filter(gender == "Prefer not to answer")
-colnames(no_answer) <- c("NA", "NA salary", "Experience")
-
-colnames(df.x) <- NULL
-new_df <- rbind(df1,df2,df3)
-
-houses_wide
-
-survey %>% select(gender,annual_salary, Experience) %>%
-  e_chart(Experience) %>%
-  e_area_(man) %>%
-  e_tooltip() 
-  e_band(l, u, areaStyle = list(list(color = "grey"), list(color = "grey")))
- 
   
+kable(tab, booktabs = TRUE) %>%
+  kable_styling(position = "center")
 
 ```
 
+
 ```{r}
-library(ggridges)
-summary(survey)
-#survey %>% select(years_of_experience_in_field) %>% count(years_of_experience_in_field)
- %>%
-  ggplot(aes(
-    x = Experience,
-    y = annual_salary,
-    fill = gender)) +
-  geom_boxplot() +
-  scale_fill_viridis(discrete = TRUE) +
+summarise(tab)
+tab  %>% ggplot(aes(x = Experience, y = Man_Europe, group = 1)) +
+  geom_line(aes(x = Experience, y = Man_Europe, group = 1)) +
+  geom_line(aes(x = Experience, y = `Man_North America`, group = 1)) +
+  geom_line(aes(x = Experience, y = Woman_Europe, group = 1)) +
+  geom_line(aes(x = Experience, y = `Woman_North America`, group = 1)) +
+  geom_point(aes(x = Experience, y = Man_Europe)) +
+  geom_point(aes(x = Experience, y = `Man_North America`)) +
+  geom_point(aes(x = Experience, y = Woman_Europe)) +
+  geom_point(aes(x = Experience, y = `Woman_North America`)) +
   theme_ipsum() +
-  ylim(0,500000) +
-  scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30", "31-40", ">41"))
+  scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30",  ">31")) +
+  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe, fill = "green"), alpha = 0.75) +
+  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "blue"), alpha = 0.75) 
 
 
 ```
 
 ```{r}
-a <- survey %>% count(country) 
-
 
 
 ```
