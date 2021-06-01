@@ -27,6 +27,32 @@ The data this week comes from the Ask a Manager Survey. H/t to Kaija Gahm for sh
  
 Elisabeth Engl prepped some plots for the [Ask a Manager blog](https://www.askamanager.org/2021/05/some-findings-from-24000-peoples-salaries.html) using this data.
 
+```{r knitr, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, fig.showtext = T, fig.retina = 1)
+```
+
+```{r setup}
+library(tidyverse)
+library(ggplot2)
+library(hrbrthemes)
+library(kableExtra)
+library(showtext)
+library(ggtext)
+library(patchwork)
+
+font_add_google("Oswald", "oswald")
+font_add_google("Roboto Condensed", "roboto condensed")
+font_add_google("Share Tech Mono", "techmono")
+
+showtext_opts(dpi = 320)
+showtext_auto(enable = TRUE)
+
+
+## ggplot theme updates
+source(here::here("theme", "tidy_grey.R"))
+```
+
+
 # Get the data
 
 ```{r get the data}
@@ -48,17 +74,6 @@ survey <- tuesdata$survey
 
 ```
 
-
-```{r libraries, message=FALSE, warning=FALSE}
-library(tidyverse)
-library(ggplot2)
-library(echarts4r)
-library(viridis)
-library(hrbrthemes)
-library(fuzzymatch)
-library(stringr)
-library(kableExtra)
-```
 
 ```{r}
 #from https://github.com/richardvogg/tidy-tuesdays/blob/master/2021/Week%2021%20-%20salary%20survey/salary_survey.R
@@ -195,9 +210,8 @@ survey_filtered <- survey %>%
     Continent == "Europe" & currency == "GBP" ~ annual_salary/0.7,
     Continent == "Europe" & currency == "SEK" ~ annual_salary/8.29,
     Continent == "Europe" & currency == "EUR" ~ annual_salary/0.81)) %>%
-  filter(Salary > 15000)
-
-x <- survey_filtered %>% filter(str_detect(Experience, "31-40")) %>% filter(str_detect(Continent, "Europe"))
+  filter(Salary > 15000) %>%
+  mutate(industry = str_replace(industry, "Government and Public Administration","Public Administration"))
 
 tab <- survey_filtered %>% 
   select(Experience , gender, Continent, Salary) %>% 
@@ -214,33 +228,98 @@ kable(tab, booktabs = TRUE) %>%
 
 
 ```{r}
-summarise(tab)
-tab  %>% ggplot(aes(x = Experience, y = Man_Europe, group = 1)) +
-  geom_line(aes(x = Experience, y = Man_Europe, group = 1)) +
-  geom_line(aes(x = Experience, y = `Man_North America`, group = 1)) +
-  geom_line(aes(x = Experience, y = Woman_Europe, group = 1)) +
-  geom_line(aes(x = Experience, y = `Woman_North America`, group = 1)) +
-  geom_point(aes(x = Experience, y = Man_Europe)) +
-  geom_point(aes(x = Experience, y = `Man_North America`)) +
-  geom_point(aes(x = Experience, y = Woman_Europe)) +
-  geom_point(aes(x = Experience, y = `Woman_North America`)) +
-  theme_ipsum() +
+
+cols <- c("Men"="#166FCC","Woman"="#FF4040")
+fills <- c("EU"="#CD0074","US"="#FF7400")
+p_median <- tab  %>% ggplot(aes(x = Experience, group = 1)) +
+  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe, fill = "EU"), alpha = 0.5) +
+  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "US"), alpha = 0.5) +
+  geom_line(aes(x = Experience, y = Man_Europe, group = "man", colour="Men")) +
+  geom_line(aes(x = Experience, y = `Woman_North America`, group = "woman", colour="Woman")) +
+  geom_line(aes(x = Experience, y = `Man_North America`, group = "man", colour="Men")) +
+  geom_line(aes(x = Experience, y = Woman_Europe, group = "woman", colour="Woman")) +
+  theme(legend.position="bottom",
+    axis.title.y = element_text(size = 12, face = "plain"),
+    axis.text = element_text(family = "Roboto Mono", size = 8.5),
+    axis.ticks.x = element_line(colour = "grey40", size = 0.3),
+    axis.ticks.y = element_line(colour = "transparent", size = 0.3),
+    panel.grid.major.y = element_line(colour = "grey40", size = 0.3),
+    panel.border = element_blank(),
+    strip.background = element_rect(color = "transparent"),
+    strip.text = element_text(size = 10),
+    panel.spacing = unit(15, "pt"),
+    legend.key	 = element_rect(color = "transparent")) +
   scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30",  ">31")) +
-  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe, fill = "green"), alpha = 0.75) +
-  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "blue"), alpha = 0.75) +
-  theme(panel.background = element_rect(fill = "#2E2E2E",colour = "#2E2E2E", size = 0.5, linetype = "solid"),
-        panel.grid.major = element_line(size = 0.1, linetype = 'dashed', colour = "white"), 
-        panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "#2E2E2E"),
-        legend.text	= element_text(colour = "white"),
-        legend.title = element_text(colour = "white"),
-        axis.text = element_text(colour = "white"))
+  xlab("Experience in years") + 
+  ylab("Annual salary") +
+  scale_y_continuous(label = scales::unit_format(unit = "K", scale = 1e-3, sep = "")) + 
+scale_colour_manual(name="Gender",values=cols, guide = guide_legend(override.aes=aes(fill=NA))) +
+    scale_fill_manual(name="Gap",values=fills, guide_legend(override.aes=aes(fill=NA))) 
 
-
+p_median
 ```
 
 ```{r}
-
-
+tab_2 <- survey_filtered %>% 
+  filter(Salary < 500000) %>%
+  select(Experience , gender, Continent, Salary, industry) %>% 
+  group_by(Experience, gender, Continent, industry) %>% 
+  filter(str_detect(gender, "Woman|Man")) %>%
+  summarize(Median = median(Salary, na.rm=TRUE))  %>%
+  pivot_wider(names_from = c(gender, Continent),values_from = Median) %>% 
+  drop_na() %>%
+  filter(str_detect(industry, "Accounting, Banking & Finance|Business or Consulting|Computing or Tech|Education (Higher Education)|Public Administration|Health care|Media & Digital")) 
 ```
 
+
+```{r}
+p_facet <- tab_2 %>% ggplot(aes(x = Experience, y = Man_Europe, group = 1)) +
+  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe), fill = "#CD0074", alpha = 0.5) +
+  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`), fill = "#FF7400", alpha = 0.5) +
+  geom_line(aes(x = Experience, y = Man_Europe, group = 1), color = "#166FCC") +
+  geom_line(aes(x = Experience, y = `Woman_North America`, group = 1), color = "#FF4040") +
+  geom_line(aes(x = Experience, y = `Man_North America`, group = 1), color = "#166FCC") +
+  geom_line(aes(x = Experience, y = Woman_Europe, group = 1), color = "#FF4040") +
+  theme(legend.position = "none",
+        axis.title.y = element_text(size = 12, face = "plain"),
+        axis.text = element_text(family = "Roboto Mono", size = 8.5),
+        axis.ticks.x = element_line(colour = "grey40", size = 0.3),
+        axis.ticks.y = element_line(colour = "transparent", size = 0.3),
+        panel.grid.major.y = element_line(colour = "grey40", size = 0.3),
+        panel.border = element_blank(),
+        strip.background = element_rect(color = "transparent"),
+        strip.text = element_text(size = 10),
+        panel.spacing = unit(15, "pt")) +
+  scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30")) +
+  xlab("Experience in years") + 
+  ylab("Annual salary") +
+  scale_y_continuous(label = scales::unit_format(unit = "K", scale = 1e-3, sep = "", expand = c(0, 0))) +
+  facet_wrap(. ~ industry, nrow = 2) +
+  labs(x = NULL, y = "\n", 
+         caption = "\n\nVisualization by Vincent Manzanilla  |  Data source: Ask a Manager Survey")
+```
+
+```{r title}
+## left-alligned title
+p_title <- ggplot(data.frame(x = 1:2, y = 1:10)) +
+  labs(x = NULL, y = NULL,
+       title = "Gender gap in annual salary for managers",
+       subtitle = "Self reported annual salaries for the US and Europe.\n") +
+  theme(line = element_blank(),
+        plot.background = element_rect(fill = "transparent", color = "transparent"),
+        panel.background = element_rect(fill = "transparent"),
+        panel.border = element_rect(color = "transparent"),
+        axis.text = element_blank())
+```
+
+```{r full-panel, fig.width = 14, fig.height = 5.5}
+ p_title + p_median +  p_facet + plot_layout(widths = c(0, 0.60, 1, 0)) +
+    theme(legend.position='bottom')
+
+ggsave("2021-01-18-Ask-a-Manager-Survey", width = 14, height = 5.6, device = pdf)
+```
+
+
+```{r}
+sessionInfo()
+```
