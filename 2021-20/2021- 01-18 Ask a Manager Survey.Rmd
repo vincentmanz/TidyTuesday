@@ -229,32 +229,63 @@ kable(tab, booktabs = TRUE) %>%
 
 ```{r}
 
-cols <- c("Men"="#166FCC","Woman"="#FF4040")
-fills <- c("EU"="#CD0074","US"="#FF7400")
+df_labels <- tibble(
+  Gender = c(" US\n gender\n gap", " EU\n gender\n gap"),
+  col = c("#FF7400", "#CD0074"),
+  x =  ">31",
+  y1 = rev(seq(80000, 110000, length.out = 2)),
+)
+
+arrow <- tibble(
+  x = c("1<", "5-7"), 
+  xend = c("2-4","2-4"),
+  y = c(80000, 35000), 
+  yend = c(75000, 45000)
+)
+
+annotation <- tibble(
+  x = c(1.5,4),
+  y = c(80000,35000)
+)
+
+
+#cols <- c("Men"="#166FCC","Woman"="#FF4040")
+#fills <- c("EU"="#CD0074","US"="#FF7400")
 p_median <- tab  %>% ggplot(aes(x = Experience, group = 1)) +
-  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe, fill = "EU"), alpha = 0.5) +
-  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "US"), alpha = 0.5) +
-  geom_line(aes(x = Experience, y = Man_Europe, group = "man", colour="Men")) +
-  geom_line(aes(x = Experience, y = `Woman_North America`, group = "woman", colour="Woman")) +
-  geom_line(aes(x = Experience, y = `Man_North America`, group = "man", colour="Men")) +
-  geom_line(aes(x = Experience, y = Woman_Europe, group = "woman", colour="Woman")) +
+  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe, fill = "EU"), fill = "#CD0074", alpha = 0.3) +
+  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`, fill = "US"), fill = "#FF7400", alpha = 0.3) +
+  geom_line(aes(x = Experience, y = Man_Europe, group = "man", colour="Men"), color = "#166FCC") +
+  geom_line(aes(x = Experience, y = `Woman_North America`, group = "woman", colour="Woman"), color = "#FF4040") +
+  geom_line(aes(x = Experience, y = `Man_North America`, group = "man", colour="Men"), color = "#166FCC") +
+  geom_line(aes(x = Experience, y = Woman_Europe, group = "woman", colour="Woman"), color = "#FF4040") +
+  geom_text(data = df_labels[1,], aes(x = x, y = y1, label = Gender), 
+              size = 2.5, col = "#FF7400", hjust = 0, fontface = "italic", family = "Poppins") +
+  geom_text(data = df_labels[2:2,], aes(x = x, y = y1, label = Gender), 
+              size = 2.5, col = "#CD0074", hjust = 0, fontface = "italic", family = "Poppins") +
+  geom_curve(data = arrow[1,], aes(x = x, xend = xend, y = y, yend = yend), 
+             arrow = arrow(length = unit(0.17, "inch")),  size = 0.5, color = "#166FCC", curvature = -0.35) +
+  geom_curve(data = arrow[2,], aes(x = x, xend = xend, y = y, yend = yend), 
+             arrow = arrow(length = unit(0.17, "inch")),  size = 0.5, color = "#FF4040", curvature = -0.35) +
+  geom_text(data = annotation[1,], label = "Men", size = 3,
+              color = "#166FCC", family = "Poppins", fontface = "bold", lineheight = 0.8) +
   theme(legend.position="bottom",
-    axis.title.y = element_text(size = 12, face = "plain"),
-    axis.text = element_text(family = "Roboto Mono", size = 8.5),
-    axis.ticks.x = element_line(colour = "grey40", size = 0.3),
-    axis.ticks.y = element_line(colour = "transparent", size = 0.3),
-    panel.grid.major.y = element_line(colour = "grey40", size = 0.3),
-    panel.border = element_blank(),
-    strip.background = element_rect(color = "transparent"),
-    strip.text = element_text(size = 10),
-    panel.spacing = unit(15, "pt"),
-    legend.key	 = element_rect(color = "transparent")) +
+        axis.title.y = element_text(size = 12, face = "plain"),
+        axis.title.x = element_text(size = 12, face = "plain"),
+        axis.text = element_text(family = "Roboto Mono", size = 8.5),
+        axis.ticks.x = element_line(colour = "grey40", size = 0.3),
+        axis.ticks.y = element_line(colour = "transparent", size = 0.3),
+        panel.grid.major.y = element_line(colour = "grey40", size = 0.3),
+        panel.border = element_blank(),
+        strip.background = element_rect(color = "transparent"),
+        strip.text = element_text(size = 10),
+        panel.spacing = unit(15, "pt"),
+        legend.key	 = element_rect(color = "transparent")) +
   scale_x_discrete(limits = c("1<", "2-4", "5-7", "8-10",  "11-20", "21-30",  ">31")) +
   xlab("Experience in years") + 
   ylab("Annual salary") +
-  scale_y_continuous(label = scales::unit_format(unit = "K", scale = 1e-3, sep = "")) + 
-scale_colour_manual(name="Gender",values=cols, guide = guide_legend(override.aes=aes(fill=NA))) +
-    scale_fill_manual(name="Gap",values=fills, guide_legend(override.aes=aes(fill=NA))) 
+  scale_y_continuous(label = scales::unit_format(unit = "K", scale = 1e-3, sep = "")) 
+  #scale_colour_manual(name="Gender",values=cols, guide = guide_legend(override.aes=aes(fill=NA))) +
+  #scale_fill_manual(name="Gap",values=fills, guide_legend(override.aes=aes(fill=NA))) 
 
 p_median
 ```
@@ -273,9 +304,11 @@ tab_2 <- survey_filtered %>%
 
 
 ```{r}
+
+
 p_facet <- tab_2 %>% ggplot(aes(x = Experience, y = Man_Europe, group = 1)) +
-  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe), fill = "#CD0074", alpha = 0.5) +
-  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`), fill = "#FF7400", alpha = 0.5) +
+  geom_ribbon(aes(x = Experience, ymin = Woman_Europe, ymax = Man_Europe), fill = "#CD0074", alpha = 0.3) +
+  geom_ribbon(aes(x = Experience, ymin = `Woman_North America`, ymax = `Man_North America`), fill = "#FF7400", alpha = 0.3) +
   geom_line(aes(x = Experience, y = Man_Europe, group = 1), color = "#166FCC") +
   geom_line(aes(x = Experience, y = `Woman_North America`, group = 1), color = "#FF4040") +
   geom_line(aes(x = Experience, y = `Man_North America`, group = 1), color = "#166FCC") +
@@ -295,8 +328,8 @@ p_facet <- tab_2 %>% ggplot(aes(x = Experience, y = Man_Europe, group = 1)) +
   ylab("Annual salary") +
   scale_y_continuous(label = scales::unit_format(unit = "K", scale = 1e-3, sep = "", expand = c(0, 0))) +
   facet_wrap(. ~ industry, nrow = 2) +
-  labs(x = NULL, y = "\n", 
-         caption = "\n\nVisualization by Vincent Manzanilla  |  Data source: Ask a Manager Survey")
+  labs(x = NULL, y = "", 
+         caption = "Visualization by Vincent Manzanilla  |  Data source: Ask a Manager Survey")
 ```
 
 ```{r title}
@@ -316,7 +349,7 @@ p_title <- ggplot(data.frame(x = 1:2, y = 1:10)) +
  p_title + p_median +  p_facet + plot_layout(widths = c(0, 0.60, 1, 0)) +
     theme(legend.position='bottom')
 
-ggsave("2021-01-18-Ask-a-Manager-Survey", width = 14, height = 5.6, device = pdf)
+ggsave("2021-01-18-Ask-a-Manager-Survey.pdf", width = 14, height = 5.6, device = pdf)
 ```
 
 
