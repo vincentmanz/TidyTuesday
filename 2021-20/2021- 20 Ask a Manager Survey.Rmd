@@ -351,7 +351,8 @@ p_title <- ggplot(data.frame(x = 1:2, y = 1:10)) +
  p_title + p_median +  p_facet + plot_layout(widths = c(0, 0.60, 1, 0)) +
     theme(legend.position='bottom')
 
-ggsave("2021-20-Ask-a-Manager-Survey.pdf", width = 14, height = 5.6, device = pdf)
+ggsave("2021-20-Ask-a-Manager-Survey.pdf", width = 14, height = 5.6, device = "pdf")
+
 ```
 
 
